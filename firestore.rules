@@ -1,0 +1,84 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Base functions for access control
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isUserWithRole(role) {
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return userDoc.data.role == role;
+    }
+    
+    function isFaculty() {
+      return isUserWithRole('faculty');
+    }
+    
+    function isStudent() {
+      return isUserWithRole('student');
+    }
+    
+    function isParent() {
+      return isUserWithRole('parent');
+    }
+    
+    function isAdmin() {
+      return isUserWithRole('admin');
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow create: if isAuthenticated();
+    }
+    
+    // Faculty collection
+    match /faculty/{facultyId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (isOwner(facultyId) || isAdmin());
+      allow create: if isAuthenticated() && (isOwner(facultyId) || isAdmin());
+    }
+    
+    // Students collection
+    match /students/{studentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (isOwner(studentId) || isAdmin() || isFaculty());
+      allow create: if isAuthenticated() && (isOwner(studentId) || isAdmin());
+    }
+    
+    // Courses collection
+    match /courses/{courseId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (isFaculty() || isAdmin());
+      allow create: if isAuthenticated() && (isFaculty() || isAdmin());
+    }
+    
+    // Enrollments collection
+    match /enrollments/{enrollmentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (isFaculty() || isAdmin());
+      allow create: if isAuthenticated() && (isFaculty() || isAdmin());
+    }
+    
+    // Attendance collection
+    match /attendance/{attendanceId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (isFaculty() || isAdmin());
+      allow create: if isAuthenticated() && (isFaculty() || isAdmin());
+    }
+    
+    // Marks collection
+    match /marks/{marksId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (isFaculty() || isAdmin());
+      allow create: if isAuthenticated() && (isFaculty() || isAdmin());
+    }
+  }
+}
