@@ -1,37 +1,51 @@
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
 
-const EnrollmentSchema = new Schema({
+const Enrollment = sequelize.define('Enrollment', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
   studentId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Student',
-    required: [true, 'Student is required']
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Students',
+      key: 'id'
+    }
   },
   courseId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Course',
-    required: [true, 'Course is required']
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Courses',
+      key: 'id'
+    }
   },
   enrollmentDate: {
-    type: Date,
-    default: Date.now
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
   },
   status: {
-    type: String,
-    enum: ['active', 'dropped', 'completed'],
-    default: 'active'
+    type: DataTypes.ENUM('active', 'dropped', 'completed'),
+    defaultValue: 'active'
   },
   grade: {
-    type: String,
-    enum: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'F', 'I', 'W', ''],
-    default: ''
+    type: DataTypes.ENUM('A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'F', 'I', 'W', ''),
+    defaultValue: ''
   },
-  remarks: String
-}, { 
-  timestamps: true
+  remarks: {
+    type: DataTypes.STRING
+  }
+}, {
+  timestamps: true,
+  indexes: [
+    {
+      unique: true,
+      fields: ['studentId', 'courseId']
+    }
+  ]
 });
 
-// Compound index to ensure a student can't be enrolled in the same course twice
-EnrollmentSchema.index({ studentId: 1, courseId: 1 }, { unique: true });
-
-module.exports = mongoose.model('Enrollment', EnrollmentSchema); 
+module.exports = Enrollment; 
