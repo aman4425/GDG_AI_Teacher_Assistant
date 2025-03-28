@@ -15,20 +15,23 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState(null);
   const [error, setError] = useState(null);
-  const [demoMode, setDemoMode] = useState(true); // Always use demo mode
+  const [demoMode, setDemoMode] = useState(true);
   const [initFailed, setInitFailed] = useState(false);
 
   // Initialize demo mode
   useEffect(() => {
     try {
-      console.log('Demo mode always activated for local deployment');
+      console.log('Initializing demo mode');
       setDemoMode(true);
       localStorage.setItem('demoMode', 'true');
       
-      // Create demo user with default role
-      const demoRole = localStorage.getItem('demoRole') || 'admin';
-      createDemoUser(demoRole);
+      // Get demo role from localStorage or use default
+      const savedRole = localStorage.getItem('demoRole');
+      const defaultRole = 'admin';
+      const role = savedRole || defaultRole;
       
+      // Create demo user with role
+      createDemoUser(role);
       setLoading(false);
     } catch (e) {
       console.error("Error setting up demo mode:", e);
@@ -41,7 +44,7 @@ export function AuthProvider({ children }) {
   const createDemoUser = (role) => {
     console.log('Creating demo user with role:', role);
     const mockUser = { 
-      uid: 'demo-user-id', 
+      uid: `demo-${role}-${Date.now()}`,
       email: `${role}@demo.com`,
       displayName: `Demo ${role.charAt(0).toUpperCase() + role.slice(1)}`
     };
@@ -50,64 +53,32 @@ export function AuthProvider({ children }) {
     localStorage.setItem('demoRole', role);
   };
 
-  // Simple mock implementations for auth operations
-  const login = (email, password) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        let role = 'student';
-        let displayName = 'Demo Student';
-        
-        if (email.includes('faculty') || email.includes('teacher')) {
-          role = 'faculty';
-          displayName = 'Demo Teacher';
-        } else if (email.includes('parent')) {
-          role = 'parent';
-          displayName = 'Demo Parent';
-        } else if (email.includes('admin')) {
-          role = 'admin';
-          displayName = 'Demo Admin';
-        }
-        
-        const mockUser = { uid: 'demo-user-id', email, displayName };
-        setCurrentUser(mockUser);
-        setUserRole(role);
-        localStorage.setItem('demoRole', role);
-        localStorage.setItem('demoMode', 'true');
-        resolve({ user: mockUser });
-      }, 500);
-    });
+  // Mock auth operations for demo mode
+  const login = async (email, password) => {
+    let role = 'student';
+    if (email.includes('faculty')) role = 'faculty';
+    else if (email.includes('admin')) role = 'admin';
+    else if (email.includes('parent')) role = 'parent';
+    
+    createDemoUser(role);
+    return { user: currentUser };
   };
 
-  const signup = (email, password, role, displayName) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const mockUser = { uid: 'demo-user-id', email, displayName };
-        setCurrentUser(mockUser);
-        setUserRole(role);
-        localStorage.setItem('demoRole', role);
-        resolve({ user: mockUser });
-      }, 500);
-    });
+  const signup = async (email, password, role, displayName) => {
+    createDemoUser(role);
+    return { user: currentUser };
   };
 
-  const logout = () => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        setCurrentUser(null);
-        setUserRole(null);
-        localStorage.removeItem('demoRole');
-        resolve();
-      }, 500);
-    });
+  const logout = async () => {
+    setCurrentUser(null);
+    setUserRole(null);
+    localStorage.removeItem('demoRole');
+    return Promise.resolve();
   };
 
-  const resetPassword = (email) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        console.log(`Demo password reset for ${email}`);
-        resolve();
-      }, 500);
-    });
+  const resetPassword = async (email) => {
+    console.log('Demo password reset for:', email);
+    return Promise.resolve();
   };
 
   const setupRecaptcha = () => {
@@ -157,10 +128,10 @@ export function AuthProvider({ children }) {
   };
 
   // Context value
-  const contextValue = {
+  const value = {
     currentUser,
     userRole,
-    demoMode,
+    demoMode: true, // Always true for demo mode
     error,
     loading,
     signup,
@@ -170,32 +141,58 @@ export function AuthProvider({ children }) {
     setupRecaptcha,
     loginWithPhone,
     verifyOtp,
-    setDemoMode,
-    
-    // Specific login for demo mode
+    setDemoMode: () => {}, // No-op since we're always in demo mode
     loginAsDemo: (role = 'admin') => {
-      setDemoMode(true);
-      localStorage.setItem('demoMode', 'true');
       createDemoUser(role);
-      return Promise.resolve({ user: { uid: 'demo-user-id' } });
-    },
-    
-    // Force demo mode function
-    forceDemo: () => {
-      setDemoMode(true);
-      localStorage.setItem('demoMode', 'true');
-      createDemoUser('admin');
-      setLoading(false);
+      return Promise.resolve({ user: currentUser });
     }
   };
 
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontFamily: 'Arial, sans-serif'
+      }}>
+        <p>Loading application...</p>
+      </div>
+    );
+  }
+
+  if (initFailed) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontFamily: 'Arial, sans-serif',
+        padding: '20px',
+        textAlign: 'center'
+      }}>
+        <h2 style={{ color: 'red' }}>Initialization Error</h2>
+        <p>Failed to initialize the application. Please try refreshing the page.</p>
+        <button 
+          onClick={() => window.location.reload()}
+          style={{
+            padding: '10px 20px',
+            marginTop: '20px',
+            cursor: 'pointer'
+          }}
+        >
+          Refresh Page
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <AuthContext.Provider value={contextValue}>
-      {!loading ? children : (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-          <p>Loading application...</p>
-        </div>
-      )}
+    <AuthContext.Provider value={value}>
+      {children}
     </AuthContext.Provider>
   );
 } 
