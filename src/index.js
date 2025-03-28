@@ -5,21 +5,37 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 
 // Always enable demo mode for local deployment without Firebase
-console.log('Enabling demo mode for local deployment');
-localStorage.setItem('demoMode', 'true');
-localStorage.setItem('demoRole', 'admin'); // Default role is admin
+console.log('Environment:', {
+  NODE_ENV: process.env.NODE_ENV,
+  REACT_APP_API_URL: process.env.REACT_APP_API_URL,
+  REACT_APP_FORCE_DEMO_MODE: process.env.REACT_APP_FORCE_DEMO_MODE
+});
 
-// Add error handling for debugging
+// Enable demo mode
+localStorage.setItem('demoMode', 'true');
+localStorage.setItem('demoRole', 'admin');
+
+// Add detailed error handling for debugging
 window.addEventListener('error', (event) => {
   console.error('Global error caught:', event.error);
-  // Show error details on page instead of white screen
+  
+  // Show detailed error information
   document.body.innerHTML = `
     <div style="padding: 20px; font-family: Arial, sans-serif;">
       <h2 style="color: red;">Application Error</h2>
       <p>Something went wrong while loading the application:</p>
-      <pre style="background: #f1f1f1; padding: 10px; border-radius: 5px;">${event.error?.stack || event.message}</pre>
+      <pre style="background: #f1f1f1; padding: 10px; border-radius: 5px; white-space: pre-wrap;">
+Error: ${event.error?.message || 'Unknown error'}
+Stack: ${event.error?.stack || 'No stack trace available'}
+Location: ${window.location.href}
+API URL: ${process.env.REACT_APP_API_URL || 'Not set'}
+Demo Mode: ${localStorage.getItem('demoMode') || 'Not set'}
+Demo Role: ${localStorage.getItem('demoRole') || 'Not set'}
+      </pre>
       <p>Please check the console for more details.</p>
-      <button onclick="window.location.reload()">Reload Application</button>
+      <button onclick="window.location.reload()" style="padding: 10px; margin-top: 10px;">
+        Reload Application
+      </button>
     </div>
   `;
 });
