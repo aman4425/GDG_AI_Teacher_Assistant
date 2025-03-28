@@ -13,7 +13,7 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
     "deploy:render": "cd backend && render deploy",
-    "deploy:vercel": "vercel"
+    "deploy:vercel": "vercel --prod"
   },
   "dependencies": {
     "@date-io/date-fns": "^3.2.1",
@@ -30,7 +30,6 @@
     "chart.js": "^4.4.8",
     "date-fns": "^4.1.0",
     "dotenv": "^16.3.1",
-    "firebase": "^9.22.2",
     "katex": "^0.16.21",
     "mathjax-react": "^2.0.1",
     "react": "^17.0.2",
@@ -72,3 +71,4 @@
     "react-dom": "^17.0.2"
   }
 }
+
