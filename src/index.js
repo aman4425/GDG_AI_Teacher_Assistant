@@ -8,7 +8,6 @@ import reportWebVitals from './reportWebVitals';
 console.log('Environment Configuration:', {
   NODE_ENV: process.env.NODE_ENV,
   REACT_APP_API_URL: process.env.REACT_APP_API_URL,
-  REACT_APP_FORCE_DEMO_MODE: process.env.REACT_APP_FORCE_DEMO_MODE,
   PUBLIC_URL: process.env.PUBLIC_URL
 });
 
@@ -47,30 +46,6 @@ Demo Role: ${localStorage.getItem('demoRole') || 'Not set'}
     </div>
   `;
 });
-
-// Check if demo mode is forced via environment variable
-if (process.env.REACT_APP_FORCE_DEMO_MODE === 'true') {
-  console.log('Demo mode forced via environment variable');
-  localStorage.setItem('demoMode', 'true');
-  localStorage.setItem('demoRole', 'admin');
-}
-
-// Add debugging for Firebase config
-console.log('Firebase config environment variables present:', {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY ? 'Yes' : 'No',
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN ? 'Yes' : 'No',
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID ? 'Yes' : 'No'
-});
-
-// Log all available environment variables without sensitive values
-console.log('Available environment variables:', 
-  Object.keys(process.env)
-    .filter(key => key.startsWith('REACT_APP_'))
-    .reduce((obj, key) => {
-      obj[key] = process.env[key] ? 'Set' : 'Not set';
-      return obj;
-    }, {})
-);
 
 // React 17 rendering
 ReactDOM.render(
