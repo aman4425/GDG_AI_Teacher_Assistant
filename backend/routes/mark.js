@@ -1,9 +1,10 @@
 const router = require('express').Router();
-const Mark = require('../models/Mark');
+const { Mark, MarkRecord } = require('../models/Mark');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const auth = require('../middleware/auth');
 const roleAuth = require('../middleware/roleAuth');
+const { Op } = require('sequelize');
 
 /**
  * @route   GET /api/marks
@@ -15,66 +16,68 @@ router.get('/', auth, roleAuth(['admin', 'faculty']), async (req, res) => {
     // Pagination parameters
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
-    const skip = (page - 1) * limit;
+    const offset = (page - 1) * limit;
 
     // Filtering parameters
-    const filter = {};
-    if (req.query.courseId) filter.courseId = req.query.courseId;
-    if (req.query.assessmentType) filter.assessmentType = req.query.assessmentType;
+    const where = {};
+    if (req.query.courseId) where.courseId = req.query.courseId;
+    if (req.query.assessmentType) where.assessmentType = req.query.assessmentType;
     
     // Date range filter
     if (req.query.startDate && req.query.endDate) {
-      filter.date = {
-        $gte: new Date(req.query.startDate),
-        $lte: new Date(req.query.endDate)
+      where.date = {
+        [Op.between]: [new Date(req.query.startDate), new Date(req.query.endDate)]
       };
     }
 
     // If faculty is making the request, only show marks for their courses
     if (req.user.role === 'faculty') {
-      const facultyCourses = await Course.find({ facultyId: req.user.id }).select('_id');
-      const facultyCourseIds = facultyCourses.map(course => course._id);
+      const facultyCourses = await Course.findAll({
+        where: { facultyId: req.user.id },
+        attributes: ['id']
+      });
+      const facultyCourseIds = facultyCourses.map(course => course.id);
       
       // Add to existing filter
-      filter.courseId = { $in: facultyCourseIds };
+      where.courseId = facultyCourseIds;
       
       // Override courseId filter if a specific course was requested
       if (req.query.courseId) {
         // Check if the requested course belongs to the faculty
-        const courseExists = facultyCourseIds.some(id => id.toString() === req.query.courseId);
+        const courseExists = facultyCourseIds.includes(parseInt(req.query.courseId));
         if (!courseExists) {
           return res.status(403).json({ message: 'Not authorized to view marks for this course' });
         }
-        filter.courseId = req.query.courseId;
+        where.courseId = req.query.courseId;
       }
     }
 
-    // Execute query with pagination
-    const marks = await Mark.find(filter)
-      .populate('courseId', 'name code')
-      .populate('gradedBy', 'firstName lastName')
-      .sort({ date: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    // Get total count for pagination
-    const total = await Mark.countDocuments(filter);
+    // Get marks with pagination and filters
+    const marks = await Mark.findAndCountAll({
+      where,
+      include: [{
+        model: MarkRecord,
+        as: 'records',
+        include: [{
+          model: Student,
+          as: 'student',
+          attributes: ['id', 'name', 'rollNumber']
+        }]
+      }],
+      order: [['date', 'DESC']],
+      limit,
+      offset
+    });
 
     res.json({
-      success: true,
-      count: marks.length,
-      total,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      marks
+      marks: marks.rows,
+      total: marks.count,
+      page,
+      totalPages: Math.ceil(marks.count / limit)
     });
-  } catch (err) {
-    console.error('Get marks error:', err);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: err.message
-    });
+  } catch (error) {
+    console.error('Error fetching marks:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
