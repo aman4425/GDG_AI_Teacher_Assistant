@@ -18,18 +18,12 @@
       "continue": true
     },
     {
-      "src": "/(.*).js",
-      "headers": {
-        "content-type": "application/javascript; charset=utf-8"
-      },
-      "continue": true
+      "src": "/favicon.ico",
+      "dest": "/favicon.ico"
     },
     {
-      "src": "/(.*).css",
-      "headers": {
-        "content-type": "text/css; charset=utf-8"
-      },
-      "continue": true
+      "src": "/manifest.json",
+      "dest": "/manifest.json"
     },
     {
       "src": "/(.*)",
