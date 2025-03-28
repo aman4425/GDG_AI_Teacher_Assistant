@@ -1,65 +1,114 @@
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
 // Individual student mark in an assessment
-const MarkRecordSchema = new Schema({
+const MarkRecord = sequelize.define('MarkRecord', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
   studentId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Student',
-    required: true
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Students',
+      key: 'id'
+    }
   },
   marks: {
-    type: Number,
-    required: true,
-    min: 0
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: false,
+    validate: {
+      min: 0
+    }
   },
-  remarks: String
+  remarks: {
+    type: DataTypes.STRING
+  }
 });
 
 // Assessment with student marks
-const MarkSchema = new Schema({
+const Mark = sequelize.define('Mark', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
   courseId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Course',
-    required: [true, 'Course is required']
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Courses',
+      key: 'id'
+    }
   },
   assessmentName: {
-    type: String,
-    required: [true, 'Assessment name is required'],
-    trim: true
+    type: DataTypes.STRING,
+    allowNull: false
   },
   assessmentType: {
-    type: String,
-    enum: ['quiz', 'assignment', 'project', 'mid_term', 'final_exam', 'lab', 'other'],
-    required: [true, 'Assessment type is required']
+    type: DataTypes.ENUM('quiz', 'assignment', 'project', 'mid_term', 'final_exam', 'lab', 'other'),
+    allowNull: false
   },
   totalMarks: {
-    type: Number,
-    required: [true, 'Total marks is required'],
-    min: 1
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: false,
+    validate: {
+      min: 1
+    }
   },
   weightage: {
-    type: Number,
-    default: 0, // Percentage contribution to final grade
-    min: 0,
-    max: 100
+    type: DataTypes.DECIMAL(5, 2),
+    defaultValue: 0,
+    validate: {
+      min: 0,
+      max: 100
+    }
   },
   date: {
-    type: Date,
-    required: [true, 'Assessment date is required']
+    type: DataTypes.DATE,
+    allowNull: false
   },
-  records: [MarkRecordSchema],
-  gradedBy: {
-    type: Schema.Types.ObjectId,
-    ref: 'Faculty'
+  dueDate: {
+    type: DataTypes.DATE
   },
-  description: String, // Description of the assessment
-  attachmentUrl: String // URL to assignment or exam paper
-}, { 
-  timestamps: true
+  description: {
+    type: DataTypes.TEXT
+  },
+  status: {
+    type: DataTypes.ENUM('draft', 'published', 'completed'),
+    defaultValue: 'draft'
+  },
+  markedBy: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: 'Faculties',
+      key: 'id'
+    }
+  }
+}, {
+  timestamps: true,
+  indexes: [
+    {
+      unique: true,
+      fields: ['courseId', 'assessmentName', 'assessmentType']
+    }
+  ]
 });
 
-// Compound index to ensure unique assessment name per course per type
-MarkSchema.index({ courseId: 1, assessmentType: 1, assessmentName: 1 }, { unique: true });
+// Define the relationship between Mark and MarkRecord
+Mark.hasMany(MarkRecord, {
+  foreignKey: 'markId',
+  as: 'records'
+});
 
-module.exports = mongoose.model('Mark', MarkSchema); 
+MarkRecord.belongsTo(Mark, {
+  foreignKey: 'markId',
+  as: 'mark'
+});
+
+module.exports = {
+  Mark,
+  MarkRecord
+}; 
