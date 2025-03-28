@@ -18,16 +18,29 @@
         {
           "key": "Access-Control-Allow-Headers",
           "value": "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
         }
       ]
     },
     {
-      "source": "/static/(.*)",
+      "source": "/static/(.*)\\.js",
       "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/static/(.*)\\.css",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/css; charset=utf-8"
+        },
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
@@ -41,6 +54,7 @@
   "env": {
     "REACT_APP_API_URL": "https://gdg-ai-teacher-assistant.onrender.com",
     "REACT_APP_FORCE_DEMO_MODE": "true",
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "PUBLIC_URL": ""
   }
 } 
